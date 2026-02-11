@@ -4,7 +4,7 @@
 #  Creates a fully provisioned Ubuntu 24.04 LXC container ready for Claude Code
 #
 #  Run on your Proxmox host:
-#    bash -c "$(curl -fsSL https://raw.githubusercontent.com/serversathome-personal/code/main/setup.sh)"
+#    curl -fsSL https://raw.githubusercontent.com/serversathome-personal/code/main/agentic.sh | bash
 #
 #  GitHub: https://github.com/serversathome-personal/code
 # ============================================================================
