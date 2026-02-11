@@ -50,47 +50,47 @@ get_config() {
   echo -e "${BOLD}Container Configuration${NC}"
   echo "─────────────────────────────────────────────────"
 
-  read -rp "Container ID [$next_id]: " CT_ID
+  read -rp "Container ID [$next_id]: " CT_ID < /dev/tty
   CT_ID="${CT_ID:-$next_id}"
   [[ "$CT_ID" =~ ^[0-9]+$ ]] || error "Container ID must be a number."
   pct status "$CT_ID" &>/dev/null && error "Container ID $CT_ID already exists."
 
-  read -rp "Hostname [claude-code]: " CT_HOSTNAME
+  read -rp "Hostname [claude-code]: " CT_HOSTNAME < /dev/tty
   CT_HOSTNAME="${CT_HOSTNAME:-claude-code}"
 
-  read -rsp "Root password: " CT_PASSWORD
+  read -rsp "Root password: " CT_PASSWORD < /dev/tty
   echo ""
   [[ -n "$CT_PASSWORD" ]] || error "Password cannot be empty."
 
-  read -rp "CPU cores [4]: " CT_CORES
+  read -rp "CPU cores [4]: " CT_CORES < /dev/tty
   CT_CORES="${CT_CORES:-4}"
 
-  read -rp "RAM in MB [10240]: " CT_RAM
+  read -rp "RAM in MB [10240]: " CT_RAM < /dev/tty
   CT_RAM="${CT_RAM:-10240}"
 
-  read -rp "Swap in MB [2048]: " CT_SWAP
+  read -rp "Swap in MB [2048]: " CT_SWAP < /dev/tty
   CT_SWAP="${CT_SWAP:-2048}"
 
-  read -rp "Disk size in GB [30]: " CT_DISK
+  read -rp "Disk size in GB [30]: " CT_DISK < /dev/tty
   CT_DISK="${CT_DISK:-30}"
 
-  read -rp "Storage [truenas-lvm]: " CT_STORAGE
+  read -rp "Storage [truenas-lvm]: " CT_STORAGE < /dev/tty
   CT_STORAGE="${CT_STORAGE:-truenas-lvm}"
 
   # Network - default DHCP
-  read -rp "IP address (DHCP or x.x.x.x/xx) [dhcp]: " CT_IP
+  read -rp "IP address (DHCP or x.x.x.x/xx) [dhcp]: " CT_IP < /dev/tty
   CT_IP="${CT_IP:-dhcp}"
 
   if [[ "$CT_IP" != "dhcp" ]]; then
-    read -rp "Gateway: " CT_GW
+    read -rp "Gateway: " CT_GW < /dev/tty
     [[ -n "$CT_GW" ]] || error "Gateway is required for static IP."
   fi
 
-  read -rp "DNS server [1.1.1.1]: " CT_DNS
+  read -rp "DNS server [1.1.1.1]: " CT_DNS < /dev/tty
   CT_DNS="${CT_DNS:-1.1.1.1}"
 
   # SSH key (optional)
-  read -rp "Path to SSH public key (optional, press Enter to skip): " CT_SSH_KEY
+  read -rp "Path to SSH public key (optional, press Enter to skip): " CT_SSH_KEY < /dev/tty
 
   echo ""
   echo -e "${BOLD}Summary${NC}"
@@ -106,7 +106,7 @@ get_config() {
   echo "  DNS:        $CT_DNS"
   echo "─────────────────────────────────────────────────"
   echo ""
-  read -rp "Proceed? (y/N): " confirm
+  read -rp "Proceed? (y/N): " confirm < /dev/tty
   [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 }
 
