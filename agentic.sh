@@ -185,7 +185,8 @@ start_container() {
 provision_container() {
   info "Provisioning container (this takes a few minutes)..."
 
-  pct exec "$CT_ID" -- bash -c 'cat > /tmp/provision.sh << "PROVISION_EOF"
+  # Write provision script to host, then push into container
+  cat > /tmp/provision-${CT_ID}.sh << 'PROVISION_EOF'
 #!/bin/bash
 set -e
 export DEBIAN_FRONTEND=noninteractive
@@ -387,15 +388,18 @@ echo ">>> Cleaning up..."
 apt-get autoremove -y -qq
 apt-get clean -qq
 rm -rf /var/lib/apt/lists/*
-rm -f /tmp/provision.sh
 
 echo ""
 echo "╔══════════════════════════════════════════════════╗"
 echo "║          Provisioning Complete!                  ║"
 echo "╚══════════════════════════════════════════════════╝"
 PROVISION_EOF
-chmod +x /tmp/provision.sh
-/tmp/provision.sh'
+
+  chmod +x /tmp/provision-${CT_ID}.sh
+  pct push "$CT_ID" /tmp/provision-${CT_ID}.sh /tmp/provision.sh
+  pct exec "$CT_ID" -- chmod +x /tmp/provision.sh
+  pct exec "$CT_ID" -- /tmp/provision.sh
+  rm -f /tmp/provision-${CT_ID}.sh
 }
 
 # ── Print Summary ─────────────────────────────────────────────────────────
