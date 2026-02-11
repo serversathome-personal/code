@@ -162,6 +162,10 @@ create_container() {
 
   "${cmd[@]}"
   success "Container $CT_ID created."
+
+  # Disable AppArmor for Docker-in-LXC compatibility
+  info "Setting AppArmor profile to unconfined (required for Docker)..."
+  echo "lxc.apparmor.profile: unconfined" >> "/etc/pve/lxc/${CT_ID}.conf"
 }
 
 # ── Start & Wait for Network ──────────────────────────────────────────────
@@ -196,8 +200,16 @@ ln -sf /usr/share/zoneinfo/America/New_York /etc/localtime
 echo "America/New_York" > /etc/timezone
 dpkg-reconfigure -f noninteractive tzdata
 
-echo ">>> Updating system..."
+echo ">>> Generating locale..."
 apt-get update -qq
+apt-get install -y -qq locales
+sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen
+locale-gen en_US.UTF-8 > /dev/null 2>&1
+update-locale LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+export LC_ALL=en_US.UTF-8
+
+echo ">>> Updating system..."
 apt-get upgrade -y -qq
 
 echo ">>> Installing core packages..."
@@ -263,7 +275,9 @@ echo "    Compose $(docker compose version --short 2>/dev/null || echo 'included
 echo ">>> Installing Claude Code (native installer)..."
 curl -fsSL https://claude.ai/install.sh | bash
 # Ensure claude is on PATH for all sessions
-if [[ -f "$HOME/.claude/bin/claude" ]]; then
+if [[ -f "$HOME/.local/bin/claude" ]]; then
+  ln -sf "$HOME/.local/bin/claude" /usr/local/bin/claude 2>/dev/null || true
+elif [[ -f "$HOME/.claude/bin/claude" ]]; then
   ln -sf "$HOME/.claude/bin/claude" /usr/local/bin/claude 2>/dev/null || true
 fi
 echo "    Claude Code installed"
@@ -322,7 +336,7 @@ cat >> /root/.bashrc << 'BASHRC'
 export EDITOR=nano
 export LANG=en_US.UTF-8
 export TZ=America/New_York
-export PATH="$HOME/.claude/bin:$HOME/.cargo/bin:/usr/local/go/bin:$PATH"
+export PATH="$HOME/.local/bin:$HOME/.claude/bin:$HOME/.cargo/bin:/usr/local/go/bin:$PATH"
 
 # Aliases
 alias ll="ls -lah --color=auto"
@@ -337,9 +351,6 @@ alias dps="docker ps --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
 # Always start in /project
 cd /project 2>/dev/null || true
 BASHRC
-
-echo ">>> Generating locale..."
-locale-gen en_US.UTF-8 > /dev/null 2>&1 || true
 
 echo ">>> Setting up Git defaults..."
 git config --global init.defaultBranch main
@@ -361,9 +372,33 @@ services:
       WATCHTOWER_SCHEDULE: "0 0 4 * * *"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
+    security_opt:
+      - apparmor=unconfined
 DCOMPOSE
 
+mkdir -p /docker/code-server
+cat > /docker/code-server/docker-compose.yml << 'DCOMPOSE2'
+services:
+  code-server:
+    image: lscr.io/linuxserver/code-server:latest
+    container_name: code-server
+    restart: unless-stopped
+    environment:
+      PUID: "0"
+      PGID: "0"
+      TZ: America/New_York
+      PASSWORD: admin
+    volumes:
+      - ./config:/config
+      - /:/config/workspace
+    ports:
+      - 8443:8443
+    security_opt:
+      - apparmor=unconfined
+DCOMPOSE2
+
 cd /docker/watchtower && docker compose up -d
+cd /docker/code-server && docker compose up -d
 
 echo ">>> Setting up auto-update cron..."
 cat > /etc/cron.d/system-update << 'CRON'
@@ -410,7 +445,7 @@ print_summary() {
 
   echo ""
   echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-  echo -e "${GREEN}${BOLD}║       Claude Code LXC Ready!                     ║${NC}"
+  echo -e "${GREEN}${BOLD}║       Claude Code LXC Ready!                    ║${NC}"
   echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "  ${BOLD}Container:${NC}  $CT_ID ($CT_HOSTNAME)"
@@ -422,6 +457,7 @@ print_summary() {
   echo -e "  ${BOLD}Connect:${NC}"
   echo -e "    Console:  ${CYAN}pct enter $CT_ID${NC}"
   [[ -n "${ct_ip:-}" ]] && echo -e "    SSH:      ${CYAN}ssh root@${ct_ip}${NC}"
+  [[ -n "${ct_ip:-}" ]] && echo -e "    Code:     ${CYAN}http://${ct_ip}:8443${NC}  (password: admin)"
   echo ""
   echo -e "  ${BOLD}Start Claude Code:${NC}"
   echo -e "    ${CYAN}claude${NC}    (shell auto-cd's to /project on login)"
@@ -432,6 +468,7 @@ print_summary() {
   echo "    • Rust (via rustup)       • Docker + Compose"
   echo "    • Git, ripgrep, fzf, fd   • Build essentials"
   echo "    • PostgreSQL & Redis CLI  • Watchtower (auto-update containers)"
+  echo "    • Code Server (port 8443)"
   echo ""
   echo -e "  ${BOLD}Permissions:${NC}  All tools pre-approved (no prompts)"
   echo -e "  ${BOLD}Config:${NC}      ~/.claude/settings.json"
