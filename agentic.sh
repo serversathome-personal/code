@@ -4,7 +4,7 @@
 #  Creates a fully provisioned Ubuntu 24.04 LXC container ready for Claude Code
 #
 #  Run on your Proxmox host:
-#    curl -fsSL https://raw.githubusercontent.com/serversathome-personal/code/main/agentic.sh | bash
+#    curl -fsSL https://raw.githubusercontent.com/serversathome-personal/code/main/agentic.sh -o /tmp/agentic.sh && bash /tmp/agentic.sh
 #
 #  GitHub: https://github.com/serversathome-personal/code
 # ============================================================================
@@ -50,47 +50,47 @@ get_config() {
   echo -e "${BOLD}Container Configuration${NC}"
   echo "─────────────────────────────────────────────────"
 
-  read -rp "Container ID [$next_id]: " CT_ID < /dev/tty
+  read -rp "Container ID [$next_id]: " CT_ID
   CT_ID="${CT_ID:-$next_id}"
   [[ "$CT_ID" =~ ^[0-9]+$ ]] || error "Container ID must be a number."
   pct status "$CT_ID" &>/dev/null && error "Container ID $CT_ID already exists."
 
-  read -rp "Hostname [claude-code]: " CT_HOSTNAME < /dev/tty
+  read -rp "Hostname [claude-code]: " CT_HOSTNAME
   CT_HOSTNAME="${CT_HOSTNAME:-claude-code}"
 
-  read -rsp "Root password: " CT_PASSWORD < /dev/tty
+  read -rsp "Root password: " CT_PASSWORD
   echo ""
   [[ -n "$CT_PASSWORD" ]] || error "Password cannot be empty."
 
-  read -rp "CPU cores [4]: " CT_CORES < /dev/tty
+  read -rp "CPU cores [4]: " CT_CORES
   CT_CORES="${CT_CORES:-4}"
 
-  read -rp "RAM in MB [10240]: " CT_RAM < /dev/tty
+  read -rp "RAM in MB [10240]: " CT_RAM
   CT_RAM="${CT_RAM:-10240}"
 
-  read -rp "Swap in MB [2048]: " CT_SWAP < /dev/tty
+  read -rp "Swap in MB [2048]: " CT_SWAP
   CT_SWAP="${CT_SWAP:-2048}"
 
-  read -rp "Disk size in GB [30]: " CT_DISK < /dev/tty
+  read -rp "Disk size in GB [30]: " CT_DISK
   CT_DISK="${CT_DISK:-30}"
 
-  read -rp "Storage [truenas-lvm]: " CT_STORAGE < /dev/tty
+  read -rp "Storage [truenas-lvm]: " CT_STORAGE
   CT_STORAGE="${CT_STORAGE:-truenas-lvm}"
 
   # Network - default DHCP
-  read -rp "IP address (DHCP or x.x.x.x/xx) [dhcp]: " CT_IP < /dev/tty
+  read -rp "IP address (DHCP or x.x.x.x/xx) [dhcp]: " CT_IP
   CT_IP="${CT_IP:-dhcp}"
 
   if [[ "$CT_IP" != "dhcp" ]]; then
-    read -rp "Gateway: " CT_GW < /dev/tty
+    read -rp "Gateway: " CT_GW
     [[ -n "$CT_GW" ]] || error "Gateway is required for static IP."
   fi
 
-  read -rp "DNS server [1.1.1.1]: " CT_DNS < /dev/tty
+  read -rp "DNS server [1.1.1.1]: " CT_DNS
   CT_DNS="${CT_DNS:-1.1.1.1}"
 
   # SSH key (optional)
-  read -rp "Path to SSH public key (optional, press Enter to skip): " CT_SSH_KEY < /dev/tty
+  read -rp "Path to SSH public key (optional, press Enter to skip): " CT_SSH_KEY
 
   echo ""
   echo -e "${BOLD}Summary${NC}"
@@ -106,7 +106,7 @@ get_config() {
   echo "  DNS:        $CT_DNS"
   echo "─────────────────────────────────────────────────"
   echo ""
-  read -rp "Proceed? (y/N): " confirm < /dev/tty
+  read -rp "Proceed? (y/N): " confirm
   [[ "$confirm" =~ ^[Yy]$ ]] || { echo "Aborted."; exit 0; }
 }
 
@@ -410,7 +410,7 @@ print_summary() {
 
   echo ""
   echo -e "${GREEN}${BOLD}╔══════════════════════════════════════════════════╗${NC}"
-  echo -e "${GREEN}${BOLD}║       Claude Code LXC Ready!                    ║${NC}"
+  echo -e "${GREEN}${BOLD}║       Claude Code LXC Ready!                     ║${NC}"
   echo -e "${GREEN}${BOLD}╚══════════════════════════════════════════════════╝${NC}"
   echo ""
   echo -e "  ${BOLD}Container:${NC}  $CT_ID ($CT_HOSTNAME)"
