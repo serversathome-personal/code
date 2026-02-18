@@ -284,8 +284,10 @@ echo "    Claude Code installed"
 
 echo ">>> Configuring Claude Code permissions (full auto-approve)..."
 mkdir -p /root/.claude
+
 cat > /root/.claude/settings.json << 'SETTINGS'
 {
+  "$schema": "https://json-schema.org/claude-code-settings.json",
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -303,6 +305,21 @@ cat > /root/.claude/settings.json << 'SETTINGS'
       "Task(*)",
       "mcp__*"
     ]
+  },
+  "env": {
+    "CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1",
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "64000",
+    "MAX_THINKING_TOKENS": "31999"
+  },
+  "alwaysThinkingEnabled": true,
+  "enabledPlugins": {
+    "frontend-design@claude-code-plugins": true,
+    "code-review@claude-code-plugins": true,
+    "commit-commands@claude-code-plugins": true,
+    "security-guidance@claude-code-plugins": true,
+    "context7@claude-plugin-directory": true,
+    "webapp-testing@anthropic-agent-skills": true,
+    "superpowers@superpowers-marketplace": true
   }
 }
 SETTINGS
@@ -311,17 +328,67 @@ echo ">>> Setting up /project directory..."
 mkdir -p /project
 
 cat > /project/CLAUDE.md << 'CLAUDEMD'
-# Project Context
-
-This is a development workspace running in a Proxmox LXC container (Ubuntu 24.04).
+# Claude Code Workspace
 
 ## Environment
-- Working directory: /project
-- Docker is available and running
-- Node.js 22 LTS, Python 3, Go, and Rust are installed
-- All Claude Code permissions are pre-approved (no prompts)
-- Docker compose files go in /docker/
+- **OS**: Ubuntu 24.04 LXC container on Proxmox
+- **Working directory**: /project
+- **Timezone**: America/New_York
+- **User**: root
+
+## Available Tools
+- **Languages**: Node.js 22 LTS, Python 3.12, Go (latest), Rust (latest)
+- **Package managers**: npm, pip (use --break-system-packages), cargo, go install
+- **Docker**: Docker Engine + Compose plugin, running and ready
+- **Containers**: Watchtower (auto-updates), Code Server (port 8443)
+- **Search tools**: ripgrep (rg), fd-find (fdfind), fzf
+- **Databases**: PostgreSQL client (psql), Redis client (redis-cli), SQLite3
+
+## Permissions
+All tools are pre-approved — no permission prompts. Bash, Read, Write, Edit, WebFetch, WebSearch, Task, and MCP tools all run without confirmation.
+
+## Agent Teams
+Agent teams are enabled. You can spawn parallel teammates for complex tasks:
+- Use agent teams for work that benefits from parallel exploration
+- Use subagents (Task tool) for quick focused work that reports back
+- tmux is installed for split-pane team visualization
+
+## Docker Usage
+Docker compose files should go in /docker/<service-name>/docker-compose.yml. 
+Watchtower is already running and will auto-update any containers with `restart: unless-stopped`.
+All Docker containers in this LXC need `security_opt: [apparmor=unconfined]`.
+
+## Conventions
+- Prefer creating files over printing long code blocks
+- Use git for version control on all projects in /project/src/
+- When installing Python packages, use: pip install --break-system-packages <package>
+- Extended thinking is always on — use it for complex architectural decisions
+
+## Installed Plugins
+- **frontend-design**: Production-grade UI with distinctive aesthetics (auto-activates on frontend tasks)
+- **code-review**: Multi-agent PR review with confidence scoring
+- **commit-commands**: Git commit, push, and PR workflows (/commit, /push, /pr)
+- **security-guidance**: Security warnings when editing sensitive files
+- **context7**: Live, version-specific library docs lookup (reduces API hallucinations)
+- **webapp-testing**: Playwright-based browser testing for UI verification and debugging
+- **superpowers**: Development workflow framework — brainstorm → plan → implement with TDD
+  - /superpowers:brainstorm — Refine ideas before coding
+  - /superpowers:write-plan — Create implementation plans
+  - /superpowers:execute-plan — Execute plans in batches via subagents
+  - Auto-activating skills: test-driven-development, systematic-debugging, verification-before-completion
 CLAUDEMD
+
+echo ">>> Installing Claude Code plugins (official marketplace)..."
+npx -y claude-plugins install @anthropics/claude-code-plugins/frontend-design
+npx -y claude-plugins install @anthropics/claude-code-plugins/code-review
+npx -y claude-plugins install @anthropics/claude-code-plugins/commit-commands
+npx -y claude-plugins install @anthropics/claude-code-plugins/security-guidance
+npx -y claude-plugins install @anthropics/claude-plugins-official/context7
+npx -y claude-plugins install @anthropics/skills/webapp-testing
+npx -y claude-plugins install @obra/superpowers-marketplace/superpowers
+
+echo ">>> Installing Playwright for webapp-testing skill..."
+npx -y playwright install --with-deps chromium
 
 echo ">>> Configuring SSH..."
 sed -i "s/^#*PermitRootLogin.*/PermitRootLogin yes/" /etc/ssh/sshd_config
@@ -472,6 +539,9 @@ print_summary() {
   echo ""
   echo -e "  ${BOLD}Permissions:${NC}  All tools pre-approved (no prompts)"
   echo -e "  ${BOLD}Config:${NC}      ~/.claude/settings.json"
+  echo -e "  ${BOLD}Features:${NC}    Agent teams, extended thinking, 64k output tokens"
+  echo -e "  ${BOLD}Plugins:${NC}     frontend-design, code-review, commit-commands,"
+  echo -e "               security-guidance, context7, webapp-testing, superpowers"
   echo -e "  ${BOLD}Auto-updates:${NC} Sundays 3 AM ET (system) / Daily 4 AM ET (Docker)"
   echo ""
 }
