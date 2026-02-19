@@ -384,8 +384,14 @@ npx -y claude-plugins install @anthropics/claude-code-plugins/code-review
 npx -y claude-plugins install @anthropics/claude-code-plugins/commit-commands
 npx -y claude-plugins install @anthropics/claude-code-plugins/security-guidance
 npx -y claude-plugins install @anthropics/claude-plugins-official/context7
-npx -y claude-plugins install @anthropics/skills/webapp-testing
 npx -y claude-plugins install @obra/superpowers-marketplace/superpowers
+
+echo ">>> Installing webapp-testing skill (from anthropics/skills)..."
+git clone --depth 1 --filter=blob:none --sparse https://github.com/anthropics/skills.git /tmp/anthropic-skills
+cd /tmp/anthropic-skills && git sparse-checkout set webapp-testing
+mkdir -p /root/.claude/skills/
+cp -r /tmp/anthropic-skills/webapp-testing /root/.claude/skills/webapp-testing
+rm -rf /tmp/anthropic-skills
 
 echo ">>> Installing Playwright for webapp-testing skill..."
 npx -y playwright install --with-deps chromium
