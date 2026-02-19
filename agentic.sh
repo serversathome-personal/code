@@ -392,6 +392,7 @@ cd /tmp/anthropic-skills && git sparse-checkout set skills/webapp-testing
 mkdir -p /root/.claude/skills/
 cp -r /tmp/anthropic-skills/skills/webapp-testing /root/.claude/skills/webapp-testing
 rm -rf /tmp/anthropic-skills
+cd /root
 
 echo ">>> Installing Playwright for webapp-testing skill..."
 npx -y playwright install --with-deps chromium
