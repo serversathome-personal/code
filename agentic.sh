@@ -388,9 +388,9 @@ npx -y claude-plugins install @obra/superpowers-marketplace/superpowers
 
 echo ">>> Installing webapp-testing skill (from anthropics/skills)..."
 git clone --depth 1 --filter=blob:none --sparse https://github.com/anthropics/skills.git /tmp/anthropic-skills
-cd /tmp/anthropic-skills && git sparse-checkout set webapp-testing
+cd /tmp/anthropic-skills && git sparse-checkout set skills/webapp-testing
 mkdir -p /root/.claude/skills/
-cp -r /tmp/anthropic-skills/webapp-testing /root/.claude/skills/webapp-testing
+cp -r /tmp/anthropic-skills/skills/webapp-testing /root/.claude/skills/webapp-testing
 rm -rf /tmp/anthropic-skills
 
 echo ">>> Installing Playwright for webapp-testing skill..."
