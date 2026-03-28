@@ -312,6 +312,7 @@ cat > /root/.claude/settings.json << 'SETTINGS'
     "MAX_THINKING_TOKENS": "31999"
   },
   "alwaysThinkingEnabled": true,
+  "enableRemoteControl": true,
   "enabledPlugins": {
     "frontend-design@claude-code-plugins": true,
     "code-review@claude-code-plugins": true,
@@ -352,6 +353,10 @@ Agent teams are enabled. You can spawn parallel teammates for complex tasks:
 - Use agent teams for work that benefits from parallel exploration
 - Use subagents (Task tool) for quick focused work that reports back
 - tmux is installed for split-pane team visualization
+
+## Remote Control
+Remote control is enabled for all sessions. Every interactive session is automatically controllable
+from claude.ai/code or the Claude mobile app. Use /remote-control or press spacebar to show QR code.
 
 ## Docker Usage
 Docker compose files should go in /docker/<service-name>/docker-compose.yml. 
@@ -546,7 +551,7 @@ print_summary() {
   echo ""
   echo -e "  ${BOLD}Permissions:${NC}  All tools pre-approved (no prompts)"
   echo -e "  ${BOLD}Config:${NC}      ~/.claude/settings.json"
-  echo -e "  ${BOLD}Features:${NC}    Agent teams, extended thinking, 64k output tokens"
+  echo -e "  ${BOLD}Features:${NC}    Agent teams, extended thinking, 64k output tokens, remote control"
   echo -e "  ${BOLD}Plugins:${NC}     frontend-design, code-review, commit-commands,"
   echo -e "               security-guidance, context7, webapp-testing, superpowers"
   echo -e "  ${BOLD}Auto-updates:${NC} Sundays 3 AM ET (system) / Daily 4 AM ET (Docker)"
