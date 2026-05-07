@@ -77,6 +77,20 @@ get_config() {
   read -rp "Storage [truenas-lvm]: " CT_STORAGE
   CT_STORAGE="${CT_STORAGE:-truenas-lvm}"
 
+  # Template storage — detect storages that accept vztmpl content
+  local tmpl_storages tmpl_default
+  tmpl_storages=$(pvesm status -content vztmpl 2>/dev/null | awk 'NR>1 {print $1}')
+  [[ -n "$tmpl_storages" ]] || error "No storage with 'vztmpl' content type enabled. Add it in Datacenter → Storage."
+  if grep -qx "local" <<<"$tmpl_storages"; then
+    tmpl_default="local"
+  else
+    tmpl_default=$(head -n1 <<<"$tmpl_storages")
+  fi
+  echo "  Template-capable storages: $(tr '\n' ' ' <<<"$tmpl_storages")"
+  read -rp "Template storage [$tmpl_default]: " CT_TEMPLATE_STORAGE
+  CT_TEMPLATE_STORAGE="${CT_TEMPLATE_STORAGE:-$tmpl_default}"
+  grep -qx "$CT_TEMPLATE_STORAGE" <<<"$tmpl_storages" || error "Storage '$CT_TEMPLATE_STORAGE' does not accept vztmpl content."
+
   # Network - default DHCP
   read -rp "IP address (DHCP or x.x.x.x/xx) [dhcp]: " CT_IP
   CT_IP="${CT_IP:-dhcp}"
@@ -102,6 +116,7 @@ get_config() {
   echo "  RAM:        $CT_RAM MB ($(( CT_RAM / 1024 )) GB)"
   echo "  Swap:       $CT_SWAP MB"
   echo "  Disk:       ${CT_DISK}G on $CT_STORAGE"
+  echo "  Template:   on $CT_TEMPLATE_STORAGE"
   echo "  Network:    $CT_IP"
   echo "  DNS:        $CT_DNS"
   echo "─────────────────────────────────────────────────"
@@ -115,14 +130,14 @@ get_template() {
   info "Checking for template: $TEMPLATE"
 
   # Download if not already present
-  if ! pveam list local 2>/dev/null | grep -q "$TEMPLATE"; then
-    info "Downloading $TEMPLATE ..."
-    pveam download local "$TEMPLATE" || error "Failed to download template. Run 'pveam update' and try again."
+  if ! pveam list "$CT_TEMPLATE_STORAGE" 2>/dev/null | grep -q "$TEMPLATE"; then
+    info "Downloading $TEMPLATE to $CT_TEMPLATE_STORAGE ..."
+    pveam download "$CT_TEMPLATE_STORAGE" "$TEMPLATE" || error "Failed to download template. Run 'pveam update' and try again."
   else
-    success "Template already downloaded: $TEMPLATE"
+    success "Template already downloaded on $CT_TEMPLATE_STORAGE: $TEMPLATE"
   fi
 
-  TEMPLATE_PATH="local:vztmpl/$TEMPLATE"
+  TEMPLATE_PATH="$CT_TEMPLATE_STORAGE:vztmpl/$TEMPLATE"
 }
 
 # ── Create Container ───────────────────────────────────────────────────────
